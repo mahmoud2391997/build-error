@@ -1,6 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// GET single Account by ID
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const { id } = params;
+    const url = new URL(request.url);
+    const companyId = url.searchParams.get('companyId');
+    
+    if (!id || !companyId) {
+      return NextResponse.json(
+        { error: 'Account ID and Company ID are required' },
+        { status: 400 }
+      );
+    }
+    
+    const account = await prisma.account.findUnique({
+      where: { 
+        id,
+        company_id: companyId
+      },
+      include: {
+        company: true
+      }
+    });
+    
+    if (!account) {
+      return NextResponse.json(
+        { error: 'Account not found' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json(account);
+  } catch (error: any) {
+    console.error('Error fetching account:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to fetch account' },
+      { status: 500 }
+    );
+  }
+}
+
 // PUT update Account
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
