@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  email         String       @unique
+  password_hash String       @db.Text
+  created_at    DateTime     @default(now()) @db.Timestamp()
+  memberships   Membership[]
+}
+
+model Company {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  admin_email     String
+  created_at      DateTime       @default(now()) @db.Timestamp()
+  memberships     Membership[]
+  active_modules  ActiveModule[]
+  accounts        Account[]
+  journal_entries JournalEntry[]
+  products        Product[]
+  warehouses      Warehouse[]
+  employees       Employee[]
+  payroll_records PayrollRecord[]
+  leads           Lead[]
+}
+
+model Membership {
+  user_id    String  @db.Uuid
+  company_id String  @db.Uuid
+  role       String? @default("ADMIN") @db.VarChar(50)
+  user       User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  company    Company @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, company_id])
+}
+
+model ActiveModule {
+  company_id  String  @db.Uuid
+  module_name String  @db.VarChar(50)
+  company     Company @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+  @@id([company_id, module_name])
+}
+
+model Account {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id    String        @db.Uuid
+  code          String        @db.VarChar(20)
+  name          String
+  type          String        @db.VarChar(50)
+  balance       Decimal?      @default(0.00) @db.Decimal(15, 2)
+  company       Company       @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  journal_lines JournalLine[]
+
+  @@unique([company_id, code])
+  @@index([company_id])
+}
+
+model JournalEntry {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id  String        @db.Uuid
+  date        DateTime      @db.Date
+  reference   String?       @db.VarChar(50)
+  description String?       @db.Text
+  created_at  DateTime      @default(now()) @db.Timestamp()
+  company     Company       @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  lines       JournalLine[]
+
+  @@index([company_id])
+}
+
+model JournalLine {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entry_id    String       @db.Uuid
+  account_id  String       @db.Uuid
+  description String?      @db.Text
+  debit       Decimal?     @default(0.00) @db.Decimal(15, 2)
+  credit      Decimal?     @default(0.00) @db.Decimal(15, 2)
+  entry       JournalEntry @relation(fields: [entry_id], references: [id], onDelete: Cascade)
+  account     Account      @relation(fields: [account_id], references: [id], onDelete: Restrict)
+}
+
+model Product {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id String   @db.Uuid
+  name       String
+  sku        String   @db.VarChar(100)
+  price      Decimal  @db.Decimal(15, 2)
+  stock      Int?     @default(0)
+  category   String?  @db.VarChar(100)
+  company    Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+
+  @@unique([company_id, sku])
+  @@index([company_id])
+}
+
+model Warehouse {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id String   @db.Uuid
+  name       String
+  location   String?  @db.Text
+  capacity   Int?
+  company    Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+}
+
+model Employee {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id      String          @db.Uuid
+  name            String
+  role            String?
+  department      String?
+  salary          Decimal?        @db.Decimal(15, 2)
+  status          String?         @default("ACTIVE") @db.VarChar(50)
+  company         Company         @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  payroll_records PayrollRecord[]
+}
+
+model PayrollRecord {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id   String    @db.Uuid
+  employee_id  String    @db.Uuid
+  month        String    @db.VarChar(50)
+  amount       Decimal   @db.Decimal(15, 2)
+  status       String?   @default("PENDING") @db.VarChar(50)
+  payment_date DateTime? @db.Date
+  company      Company   @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  employee     Employee  @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+}
+
+model Lead {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id   String   @db.Uuid
+  name         String
+  company_name String?
+  value        Decimal? @db.Decimal(15, 2)
+  stage        String?  @default("NEW") @db.VarChar(50)
+  chance       Int?     @default(0)
+  company      Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+}
