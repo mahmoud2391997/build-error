@@ -1,12 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 // GET single Account by ID
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const url = new URL(request.url);
     const companyId = url.searchParams.get('companyId');
+    
+    // Handle build-time requests
+    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+      return NextResponse.json(
+        { error: 'Database not available during build' },
+        { status: 503 }
+      );
+    }
+    
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      return NextResponse.json(
+        { error: 'Database not available during build' },
+        { status: 503 }
+      );
+    }
     
     if (!id || !companyId) {
       return NextResponse.json(
