@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     const saltRounds = 10;
     const passwordHash = await hash(password, saltRounds);
 
-    const result = await prisma.$transaction(async (prisma) => {
+    const result = await prisma.$transaction(async (prisma: any) => {
       const user = await prisma.user.create({
         data: { name, email, password_hash: passwordHash },
       });
