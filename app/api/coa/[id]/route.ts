@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // GET single Account by ID
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const url = new URL(request.url);
     const companyId = url.searchParams.get('companyId');
     
@@ -43,9 +43,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PUT update Account
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { code, name, type, balance, companyId } = await request.json();
     
     if (!id || !companyId) {
@@ -83,9 +83,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE Account
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const url = new URL(request.url);
     const companyId = url.searchParams.get('companyId') || await request.json().then(body => body?.companyId).catch(() => null);
     
@@ -109,12 +109,13 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    const { id } = await params;
     console.log('CATCH BLOCK EXECUTED - Error caught:', error);
     console.log('Error code:', error.code);
     
     // Handle Prisma Foreign Key Constraint Violation
     if (error.code === 'P2003') {
-      console.log('Attempted to delete account with existing relations:', params.id);
+      console.log('Attempted to delete account with existing relations:', id);
       return NextResponse.json(
         { error: 'لا يمكن حذف هذا الحساب لأنه مرتبط بعمليات مالية أو قيود يومية. يرجى حذف العمليات المرتبطة أولاً.' },
         { status: 409 }
@@ -123,7 +124,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     // Handle Record Not Found
     if (error.code === 'P2025') {
-      console.log('Attempted to delete non-existent account:', params.id);
+      console.log('Attempted to delete non-existent account:', id);
       return NextResponse.json(
         { error: 'الحساب غير موجود أو تم حذفه بالفعل.' },
         { status: 404 }
