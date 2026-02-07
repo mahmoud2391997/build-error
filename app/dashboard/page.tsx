@@ -63,7 +63,7 @@ export default function DashboardPage() {
         
         if (companies && companies.length > 0) {
           // Prioritize company with active modules, or use the first one
-          const apiCompany = companies.find(c => c.active_modules && c.active_modules.length > 0) || companies[0];
+          const apiCompany = companies.find((c: any) => c.active_modules && c.active_modules.length > 0) || companies[0];
           const company: Company = {
             id: apiCompany.id,
             name: apiCompany.name,
