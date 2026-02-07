@@ -44,6 +44,7 @@
   "license": "MIT",
   "pnpm": {
     "allowedBuiltDependencies": [
+      "unrs-resolver",
       "@prisma/client",
       "@prisma/engines",
       "prisma"
